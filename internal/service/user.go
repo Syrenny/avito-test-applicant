@@ -73,13 +73,26 @@ func (s *UserService) GetUserById(
 
 func (s *UserService) SetIsActive(
 	ctx context.Context, userId uuid.UUID, isActive bool,
-) (domain.User, error) {
+) (domain.UserWithTeamName, error) {
 	user, err := s.userRepo.SetIsActive(ctx, userId, isActive)
 	if err != nil {
 		if errors.Is(err, repoerrors.ErrNotFound) {
-			return domain.User{}, ErrNotFound
+			return domain.UserWithTeamName{}, ErrNotFound
 		}
-		return domain.User{}, err
+		return domain.UserWithTeamName{}, err
 	}
-	return user, nil
+	team, err := s.teamRepo.GetTeamById(ctx, user.TeamId)
+	if err != nil {
+		if errors.Is(err, repoerrors.ErrNotFound) {
+			return domain.UserWithTeamName{}, ErrNotFound
+		}
+		return domain.UserWithTeamName{}, err
+	}
+
+	return domain.UserWithTeamName{
+		IsActive: user.IsActive,
+		TeamName: team.TeamName,
+		UserId:   user.UserId,
+		Username: user.Username,
+	}, nil
 }

@@ -1,5 +1,5 @@
 create table pull_requests (
-    id         uuid         default uuidv7() primary key,
+    id         uuid         default uuidv4() primary key,
     created_at timestamptz  not null,
     merged_at  timestamptz,
     pr_name    varchar(255) not null,

@@ -11,14 +11,15 @@ import (
 )
 
 type Team interface {
-	CreateTeam(
+	CreateTeamWithUsers(
 		ctx context.Context,
 		teamName string,
-	) (domain.Team, error)
+		members []domain.UserInput,
+	) (domain.TeamWithUsers, error)
 	GetTeamByName(
 		ctx context.Context,
 		teamName string,
-	) (domain.Team, error)
+	) (domain.TeamWithUsers, error)
 }
 
 type User interface {
@@ -35,7 +36,7 @@ type User interface {
 		ctx context.Context,
 		userId uuid.UUID,
 		isActive bool,
-	) (domain.User, error)
+	) (domain.UserWithTeamName, error)
 }
 
 type PullRequest interface {
@@ -49,6 +50,10 @@ type PullRequest interface {
 		ctx context.Context,
 		pullRequestId uuid.UUID,
 	) (domain.PullRequest, error)
+	GetPullRequestsByUserId(
+		ctx context.Context,
+		userId uuid.UUID,
+	) ([]domain.PullRequest, error)
 	SetMerged(
 		ctx context.Context,
 		pullRequestId uuid.UUID,
@@ -73,7 +78,7 @@ type ServicesDependencies struct {
 
 func NewServices(deps ServicesDependencies) *Services {
 	return &Services{
-		Team:        NewTeamService(deps.Repos),
+		Team:        NewTeamService(deps.Repos, deps.TrManager),
 		User:        NewUserService(deps.Repos, deps.TrManager),
 		PullRequest: NewPullRequestService(deps.Repos, deps.TrManager),
 	}

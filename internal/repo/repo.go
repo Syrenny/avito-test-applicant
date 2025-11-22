@@ -18,12 +18,18 @@ type Team interface {
 		ctx context.Context,
 		teamName string,
 	) (domain.Team, error)
+	GetTeamById(
+		ctx context.Context,
+		teamId uuid.UUID,
+	) (domain.Team, error)
 }
 
 type User interface {
 	CreateUser(
 		ctx context.Context,
+		userId *uuid.UUID,
 		username string,
+		isActive bool,
 		teamId uuid.UUID,
 	) (domain.User, error)
 	GetUserById(
@@ -39,9 +45,11 @@ type User interface {
 		ctx context.Context,
 		teamId uuid.UUID,
 	) ([]domain.User, error)
+	UpdateUser(
+		ctx context.Context,
+		user domain.User,
+	) (domain.User, error)
 }
-
-
 
 type PullRequest interface {
 	CreatePullRequest(

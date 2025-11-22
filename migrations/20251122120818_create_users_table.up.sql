@@ -1,5 +1,5 @@
 create table users (
-    id        uuid         default uuidv7() primary key,
+    id        uuid         default uuidv4() primary key,
     is_active boolean      default false,
     username  varchar(255) not null,
     team_id   uuid         references teams (

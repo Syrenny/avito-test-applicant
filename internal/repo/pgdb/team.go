@@ -10,6 +10,7 @@ import (
 	"fmt"
 
 	"github.com/Masterminds/squirrel"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 )
@@ -77,6 +78,35 @@ func (r *TeamRepo) GetTeamByName(
 			return domain.Team{}, repoerrors.ErrNotFound
 		}
 		return domain.Team{}, fmt.Errorf("query team by name: %w", err)
+	}
+
+	return t, nil
+}
+
+func (r *TeamRepo) GetTeamById(
+	ctx context.Context,
+	teamId uuid.UUID,
+) (domain.Team, error) {
+	query, args, err := r.Builder.
+		Select("id", "team_name").
+		From("teams").
+		Where(squirrel.Eq{"id": teamId}).
+		Limit(1).
+		ToSql()
+	if err != nil {
+		return domain.Team{}, fmt.Errorf("build select team sql: %w", err)
+	}
+
+	var t domain.Team
+	err = r.Pool.QueryRow(ctx, query, args...).Scan(
+		&t.TeamId,
+		&t.TeamName,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return domain.Team{}, repoerrors.ErrNotFound
+		}
+		return domain.Team{}, fmt.Errorf("query team by id: %w", err)
 	}
 
 	return t, nil

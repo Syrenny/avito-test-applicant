@@ -2,6 +2,8 @@ package app
 
 import (
 	"avito-test-applicant/config"
+	"avito-test-applicant/internal/api/adapter/handlers"
+	apigen "avito-test-applicant/internal/api/gen"
 	"avito-test-applicant/internal/repo"
 	"avito-test-applicant/internal/service"
 	"avito-test-applicant/pkg/httpserver"
@@ -45,22 +47,27 @@ func Run(configPath string) {
 	// Services dependencies
 	log.Info("Initializing services...")
 	deps := service.ServicesDependencies{
-		Repos: repositories,
+		Repos:     repositories,
 		TrManager: trManager,
 	}
 	services := service.NewServices(deps)
 
-	// Echo handler
+	// Echo
 	log.Info("Initializing handlers and routes...")
-	handler := echo.New()
+	e := echo.New()
 	// setup handler validator as go-playground/validator
-	handler.Validator = &requestValidator{v: gv.New()}
-	v1.NewRouter(handler, services)
+	e.Validator = &requestValidator{v: gv.New()}
+
+	serverImpl := handlers.NewServer(services)
 
 	// HTTP server
+	strictServer := apigen.NewStrictHandler(serverImpl, nil)
+	apigen.RegisterHandlers(e, strictServer)
+
+	// HTTP server wrapper
 	log.Info("Starting http server...")
 	log.Debugf("Server port: %s", cfg.HTTP.Port)
-	httpServer := httpserver.New(handler, httpserver.Port(cfg.HTTP.Port))
+	httpServer := httpserver.New(e, httpserver.Port(cfg.HTTP.Port))
 
 	// Waiting signal
 	log.Info("Configuring graceful shutdown...")

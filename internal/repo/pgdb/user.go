@@ -22,13 +22,21 @@ func NewUserRepo(pg *postgres.Postgres) *UserRepo {
 
 func (r *UserRepo) CreateUser(
 	ctx context.Context,
+	userId *uuid.UUID,
 	username string,
+	isActive bool,
 	teamId uuid.UUID,
 ) (domain.User, error) {
+	var id uuid.UUID
+	if userId != nil {
+		id = *userId
+	} else {
+		id = uuid.New()
+	}
 	sql, args, err := r.Builder.
 		Insert("users").
-		Columns("username", "team_id").
-		Values(username, teamId).
+		Columns("id", "username", "is_active", "team_id").
+		Values(id, username, isActive, teamId).
 		Suffix("RETURNING id, username, team_id, is_active").
 		ToSql()
 	if err != nil {
@@ -151,4 +159,37 @@ func (r *UserRepo) GetUsersByTeam(
 	}
 
 	return users, nil
+}
+
+func (r *UserRepo) UpdateUser(
+	ctx context.Context,
+	user domain.User,
+) (domain.User, error) {
+	sql, args, err := r.Builder.
+		Update("users").
+		Set("username", user.Username).
+		Set("team_id", user.TeamId).
+		Set("is_active", user.IsActive).
+		Where(squirrel.Eq{"id": user.UserId}).
+		Suffix("RETURNING id, username, team_id, is_active").
+		ToSql()
+	if err != nil {
+		return domain.User{}, fmt.Errorf("build update user sql: %w", err)
+	}
+
+	var u domain.User
+	err = r.Pool.QueryRow(ctx, sql, args...).Scan(
+		&u.UserId,
+		&u.Username,
+		&u.TeamId,
+		&u.IsActive,
+	)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return domain.User{}, repoerrors.ErrNotFound
+		}
+		return domain.User{}, fmt.Errorf("exec update user: %w", err)
+	}
+
+	return u, nil
 }
