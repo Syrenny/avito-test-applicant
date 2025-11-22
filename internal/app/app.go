@@ -3,8 +3,9 @@ package app
 import (
 	"avito-test-applicant/config"
 	"avito-test-applicant/internal/repo"
-	"avito-test-applicant/migrations/httpserver"
-	"avito-test-applicant/migrations/postgres"
+	"avito-test-applicant/internal/service"
+	"avito-test-applicant/pkg/httpserver"
+	"avito-test-applicant/pkg/postgres"
 	"fmt"
 	"os"
 	"os/signal"
@@ -15,7 +16,6 @@ import (
 	gv "github.com/go-playground/validator/v10"
 	log "github.com/sirupsen/logrus"
 )
-
 
 func Run(configPath string) {
 	// Configuration
@@ -29,11 +29,14 @@ func Run(configPath string) {
 
 	// Repositories
 	log.Info("Initializing postgres...")
-	pg, err := postgres.New(cfg.PG.URL, postgres.MaxPoolSize(cfg.PG.MaxPoolSize))
+	pg, err := postgres.New(cfg.PG.URL, cfg.PG.MaxPoolSize)
 	if err != nil {
 		log.Fatal(fmt.Errorf("app - Run - pgdb.NewServices: %w", err))
 	}
 	defer pg.Close()
+
+	log.Info("Initializing transaction manager...")
+	trManager := postgres.NewTransactionManager(pg.Pool)
 
 	// Repositories
 	log.Info("Initializing repositories...")
@@ -42,7 +45,8 @@ func Run(configPath string) {
 	// Services dependencies
 	log.Info("Initializing services...")
 	deps := service.ServicesDependencies{
-		Repos:    repositories,
+		Repos: repositories,
+		TrManager: trManager,
 	}
 	services := service.NewServices(deps)
 

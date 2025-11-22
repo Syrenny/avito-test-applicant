@@ -3,9 +3,9 @@ package service
 import (
 	"context"
 
-	"avito-test-applicant/internal/repo"
-
 	"avito-test-applicant/internal/domain"
+	"avito-test-applicant/internal/repo"
+	"avito-test-applicant/pkg/postgres"
 
 	"github.com/google/uuid"
 )
@@ -13,67 +13,68 @@ import (
 type Team interface {
 	CreateTeam(
 		ctx context.Context,
-		team_name string,
-		) (domain.Team, error)
+		teamName string,
+	) (domain.Team, error)
 	GetTeamByName(
 		ctx context.Context,
-		team_name string,
-		) (domain.Team, error)
+		teamName string,
+	) (domain.Team, error)
 }
 
 type User interface {
 	CreateUser(
 		ctx context.Context,
 		username string,
-		team_name string,
-		) (domain.User, error)
+		teamName string,
+	) (domain.User, error)
 	GetUserById(
 		ctx context.Context,
-		user_id uuid.UUID,
-		) (domain.User, error)
+		userId uuid.UUID,
+	) (domain.User, error)
 	SetIsActive(
 		ctx context.Context,
-		user_id uuid.UUID,
-		is_active bool,
-		) (domain.User, error)
+		userId uuid.UUID,
+		isActive bool,
+	) (domain.User, error)
 }
 
 type PullRequest interface {
 	CreatePullRequest(
 		ctx context.Context,
-		pull_request_id uuid.UUID,
-		pull_request_name string,
-		author_id uuid.UUID,
-		) (domain.PullRequest, error)
+		pullRequestId uuid.UUID,
+		pullRequestName string,
+		authorId uuid.UUID,
+	) (domain.PullRequest, error)
 	GetPullRequestById(
 		ctx context.Context,
-		pull_request_id uuid.UUID,
-		) (domain.PullRequest, error)
+		pullRequestId uuid.UUID,
+	) (domain.PullRequest, error)
 	SetMerged(
 		ctx context.Context,
-		pull_request_id uuid.UUID,
-		) (domain.PullRequest, error)
+		pullRequestId uuid.UUID,
+	) (domain.PullRequest, error)
 	Reassign(
 		ctx context.Context,
-		pull_request_id uuid.UUID,
-		old_user_id uuid.UUID,
-		) (domain.PullRequest, error)
+		pullRequestId uuid.UUID,
+		oldUserId uuid.UUID,
+	) (domain.PullRequest, error)
 }
 
 type Services struct {
-	Team    Team
-	User    User
+	Team        Team
+	User        User
 	PullRequest PullRequest
 }
 
 type ServicesDependencies struct {
-	Repos *repo.Repositories
+	Repos     *repo.Repositories
+	TrManager *postgres.TransactionManager
 }
 
 func NewServices(deps ServicesDependencies) *Services {
 	return &Services{
-		Team:    NewTeamService(deps.Repos),
-		User:    NewUserService(deps.Repos),
-		PullRequest: NewPullRequestService(deps.Repos),
+		Team:        NewTeamService(deps.Repos),
+		User:        NewUserService(deps.Repos, deps.TrManager),
+		PullRequest: NewPullRequestService(deps.Repos, deps.TrManager),
 	}
 }

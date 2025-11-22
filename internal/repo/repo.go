@@ -3,7 +3,7 @@ package repo
 import (
 	"avito-test-applicant/internal/domain"
 	"avito-test-applicant/internal/repo/pgdb"
-	"avito-test-applicant/migrations/postgres"
+	"avito-test-applicant/pkg/postgres"
 	"context"
 
 	"github.com/google/uuid"
@@ -12,11 +12,11 @@ import (
 type Team interface {
 	CreateTeam(
 		ctx context.Context,
-		team_name string,
-	) (uuid.UUID, error)
+		teamName string,
+	) (domain.Team, error)
 	GetTeamByName(
 		ctx context.Context,
-		team_name string,
+		teamName string,
 	) (domain.Team, error)
 }
 
@@ -24,45 +24,60 @@ type User interface {
 	CreateUser(
 		ctx context.Context,
 		username string,
-		team_name string,
-		) (domain.User, error)
+		teamId uuid.UUID,
+	) (domain.User, error)
 	GetUserById(
 		ctx context.Context,
-		user_id uuid.UUID,
-		) (domain.User, error)
+		userId uuid.UUID,
+	) (domain.User, error)
 	SetIsActive(
 		ctx context.Context,
-		user_id uuid.UUID,
-		is_active bool,
-		) (domain.User, error)
+		userId uuid.UUID,
+		isActive bool,
+	) (domain.User, error)
+	GetUsersByTeam(
+		ctx context.Context,
+		teamId uuid.UUID,
+	) ([]domain.User, error)
 }
+
+
 
 type PullRequest interface {
 	CreatePullRequest(
 		ctx context.Context,
-		pull_request_id uuid.UUID,
-		pull_request_name string,
-		author_id uuid.UUID,
-		) (domain.PullRequest, error)
+		pullRequestId uuid.UUID,
+		pullRequestName string,
+		authorId uuid.UUID,
+	) (domain.PullRequest, error)
 	GetPullRequestById(
 		ctx context.Context,
-		pull_request_id uuid.UUID,
-		) (domain.PullRequest, error)
+		pullRequestId uuid.UUID,
+	) (domain.PullRequest, error)
 	SetMerged(
 		ctx context.Context,
-		pull_request_id uuid.UUID,
-		) (domain.PullRequest, error)
-	Reassign(
+		pullRequestId uuid.UUID,
+	) (domain.PullRequest, error)
+}
+
+type Reviewer interface {
+	AssignOne(
 		ctx context.Context,
-		pull_request_id uuid.UUID,
-		old_user_id uuid.UUID,
-		) (domain.PullRequest, error)
+		pullRequestId uuid.UUID,
+		userId uuid.UUID,
+	) error
+	RemoveOne(
+		ctx context.Context,
+		pullRequestId uuid.UUID,
+		userId uuid.UUID,
+	) error
 }
 
 type Repositories struct {
 	Team
 	User
 	PullRequest
+	Reviewer
 }
 
 func NewRepositories(pg *postgres.Postgres) *Repositories {
@@ -70,5 +85,6 @@ func NewRepositories(pg *postgres.Postgres) *Repositories {
 		Team:        pgdb.NewTeamRepo(pg),
 		User:        pgdb.NewUserRepo(pg),
 		PullRequest: pgdb.NewPullRequestRepo(pg),
+		Reviewer:    pgdb.NewReviewerRepo(pg),
 	}
 }

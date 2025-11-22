@@ -2,12 +2,17 @@ package pgdb
 
 import (
 	"avito-test-applicant/internal/domain"
-	"avito-test-applicant/migrations/postgres"
+	"avito-test-applicant/internal/repo/repoerrors"
+	"avito-test-applicant/pkg/postgres"
 	"context"
+	"fmt"
+	"time"
 
+	"github.com/Masterminds/squirrel"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 )
-
 
 type PullRequestRepo struct {
 	*postgres.Postgres
@@ -17,33 +22,121 @@ func NewPullRequestRepo(pg *postgres.Postgres) *PullRequestRepo {
 	return &PullRequestRepo{pg}
 }
 
+func toDomainPullRequestStatus(smallint int) domain.PullRequestStatus {
+	if smallint == 1 {
+		return domain.PullRequestStatusMERGED
+	}
+	return domain.PullRequestStatusOPEN
+}
+
 func (r *PullRequestRepo) CreatePullRequest(
 	ctx context.Context,
-	pull_request_id uuid.UUID,
-	pull_request_name string,
-	author_id uuid.UUID,
-	) (domain.PullRequest, error) {
+	pullRequestId uuid.UUID,
+	pullRequestName string,
+	authorId uuid.UUID,
+) (domain.PullRequest, error) {
+	sql, args, err := r.Builder.
+		Insert("pull_requests").
+		Columns("id", "pr_name", "author_id", "pr_status", "created_at").
+		Values(pullRequestId, pullRequestName, authorId, 0, time.Now().UTC()).
+		Suffix("RETURNING id, pr_name, author_id, pr_status, created_at, merged_at").
+		ToSql()
+	if err != nil {
+		return domain.PullRequest{}, fmt.Errorf("build insert PR sql: %w", err)
+	}
+
+	var pr domain.PullRequest
+	var statusSmallint int
+	err = r.Pool.QueryRow(ctx, sql, args...).Scan(
+		&pr.PullRequestId,
+		&pr.PullRequestName,
+		&pr.AuthorId,
+		&statusSmallint,
+		&pr.CreatedAt,
+		&pr.MergedAt,
+	)
+	if err != nil {
+		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == "23505" {
+			return domain.PullRequest{}, repoerrors.ErrAlreadyExists
+		}
+		return domain.PullRequest{}, fmt.Errorf("exec insert PR: %w", err)
 
 	}
+
+	pr.Status = toDomainPullRequestStatus(statusSmallint)
+
+	return pr, nil
+}
 
 func (r *PullRequestRepo) GetPullRequestById(
 	ctx context.Context,
-	pull_request_id uuid.UUID,
-	) (domain.PullRequest, error) {
-
+	pullRequestId uuid.UUID,
+) (domain.PullRequest, error) {
+	sql, args, err := r.Builder.
+		Select("id", "pr_name", "author_id", "pr_status", "created_at", "merged_at").
+		From("pull_requests").
+		Where(squirrel.Eq{"id": pullRequestId}).
+		Limit(1).
+		ToSql()
+	if err != nil {
+		return domain.PullRequest{}, fmt.Errorf("build select PR sql: %w", err)
 	}
+
+	var pr domain.PullRequest
+	var statusSmallint int
+	err = r.Pool.QueryRow(ctx, sql, args...).Scan(
+		&pr.PullRequestId,
+		&pr.PullRequestName,
+		&pr.AuthorId,
+		&statusSmallint,
+		&pr.CreatedAt,
+		&pr.MergedAt,
+	)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return domain.PullRequest{}, repoerrors.ErrNotFound
+		}
+		return domain.PullRequest{}, fmt.Errorf("query PR by id: %w", err)
+	}
+
+	pr.Status = toDomainPullRequestStatus(statusSmallint)
+
+	return pr, nil
+}
 
 func (r *PullRequestRepo) SetMerged(
 	ctx context.Context,
-	pull_request_id uuid.UUID,
-	) (domain.PullRequest, error) {
-
+	pullRequestId uuid.UUID,
+) (domain.PullRequest, error) {
+	sql, args, err := r.Builder.
+		Update("pull_requests").
+		Set("pr_status", 1).
+		Set("merged_at", time.Now()).
+		Where(squirrel.Eq{"id": pullRequestId}).
+		Suffix("RETURNING id, pr_name, author_id, pr_status, created_at, merged_at").
+		ToSql()
+	if err != nil {
+		return domain.PullRequest{}, fmt.Errorf("build update PR sql: %w", err)
 	}
 
-func (r *PullRequestRepo) Reassign(
-	ctx context.Context,
-	pull_request_id uuid.UUID,
-	old_user_id uuid.UUID,
-	) (domain.PullRequest, error) {
-
+	var pr domain.PullRequest
+	var statusSmallint int
+	err = r.Pool.QueryRow(ctx, sql, args...).Scan(
+		&pr.PullRequestId,
+		&pr.PullRequestName,
+		&pr.AuthorId,
+		&statusSmallint,
+		&pr.CreatedAt,
+		&pr.MergedAt,
+	)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return domain.PullRequest{}, repoerrors.ErrNotFound
+		}
+		return domain.PullRequest{}, fmt.Errorf("exec update PR: %w", err)
 	}
+
+	pr.Status = toDomainPullRequestStatus(statusSmallint)
+
+	return pr, nil
+}

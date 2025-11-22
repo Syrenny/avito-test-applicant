@@ -4,6 +4,7 @@ import "github.com/google/uuid"
 
 // Team defines model for Team.
 type Team struct {
+	TeamId   uuid.UUID    `json:"team_id"`
 	Members  []TeamMember `json:"members"`
 	TeamName string       `json:"team_name"`
 }
