@@ -4,8 +4,6 @@ export
 PROJECT ?= avito-test-applicant
 COMPOSE := docker compose -p $(PROJECT)
 FILES := -f compose.yml
-PSQL_CONN := $(PG_URL_LOCALHOST)?sslmode=disable
-PSQL := psql "$(PSQL_CONN)" -v ON_ERROR_STOP=1
 
 help: ## Display this help screen
 	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
@@ -17,6 +15,13 @@ up: ### Run docker-compose
 	$(COMPOSE) $(FILES) up -d --build --remove-orphans
 .PHONY: up
 
+down: ### Down docker-compose
+	$(COMPOSE) $(FILES) down --remove-orphans
+.PHONY: down
+
+logs: ### Show docker-compose logs
+	$(COMPOSE) $(FILES) logs -f
+.PHONY: logs
 
 
 up-postgres: ### Run only Postgres service
@@ -47,31 +52,17 @@ rebuild: ### Rebuild app service (stop/remove then up --build)
 	$(COMPOSE) $(FILES) up -d --build app
 .PHONY: rebuild
 
-down: ### Down docker-compose
-	$(COMPOSE) $(FILES) down --remove-orphans
-.PHONY: down
-
-logs: ### Show docker-compose logs
-	$(COMPOSE) $(FILES) logs -f
-.PHONY: logs
-
 
 
 test: ### run test
 	go test -v ./...
 .PHONY: test
 
-cover-html: ### run test with coverage and open html report
-	go test -coverprofile=coverage.out ./...
-	go tool cover -html=coverage.out
-	rm coverage.out
-.PHONY: coverage-html
-
 cover: ### run test with coverage
-	go test -coverprofile=coverage.out ./...
+	go test -coverprofile=coverage.out ./internal/...
 	go tool cover -func=coverage.out
 	rm coverage.out
-.PHONY: coverage
+.PHONY: cover
 
 
 
@@ -82,11 +73,3 @@ generate-api: ## Generate API code from OpenAPI spec
 migrate-create:  ### create new migration
 	migrate create -ext sql -dir migrations $(name)
 .PHONY: migrate-create
-
-migrate-up: ### migration up
-	migrate -path migrations -database '$(PG_URL_LOCALHOST)?sslmode=disable' up
-.PHONY: migrate-up
-
-migrate-down: ### migration down
-	echo "y" | migrate -path migrations -database '$(PG_URL_LOCALHOST)?sslmode=disable' down
-.PHONY: migrate-down
