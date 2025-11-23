@@ -59,6 +59,7 @@ logs: ### Show docker-compose logs
 
 test: ### run test
 	go test -v ./...
+.PHONY: test
 
 cover-html: ### run test with coverage and open html report
 	go test -coverprofile=coverage.out ./...
