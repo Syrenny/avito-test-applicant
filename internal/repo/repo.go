@@ -62,6 +62,10 @@ type PullRequest interface {
 		ctx context.Context,
 		pullRequestId uuid.UUID,
 	) (domain.PullRequest, error)
+	GetPullRequestsByIds(
+		ctx context.Context,
+		pullRequestIds []uuid.UUID,
+	) ([]domain.PullRequest, error)
 	SetMerged(
 		ctx context.Context,
 		pullRequestId uuid.UUID,
@@ -79,6 +83,14 @@ type Reviewer interface {
 		pullRequestId uuid.UUID,
 		userId uuid.UUID,
 	) error
+	ListReviewers(
+		ctx context.Context,
+		pullRequestId uuid.UUID,
+	) ([]uuid.UUID, error)
+	ListByUserId(
+		ctx context.Context,
+		userId uuid.UUID,
+	) ([]uuid.UUID, error)
 }
 
 type Repositories struct {

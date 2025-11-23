@@ -40,12 +40,12 @@ type User interface {
 }
 
 type PullRequest interface {
-	CreatePullRequest(
+	CreateAndAssignPullRequest(
 		ctx context.Context,
 		pullRequestId uuid.UUID,
 		pullRequestName string,
 		authorId uuid.UUID,
-	) (domain.PullRequest, error)
+	) (domain.PullRequestWithReviewers, error)
 	GetPullRequestById(
 		ctx context.Context,
 		pullRequestId uuid.UUID,
@@ -62,7 +62,11 @@ type PullRequest interface {
 		ctx context.Context,
 		pullRequestId uuid.UUID,
 		oldUserId uuid.UUID,
-	) (domain.PullRequest, error)
+	) (domain.PullRequestWithReviewers, error)
+	GetAssignedReviewsByUserId(
+		ctx context.Context,
+		userId uuid.UUID,
+	) ([]domain.PullRequestShort, error)
 }
 
 type Services struct {

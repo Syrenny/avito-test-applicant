@@ -13,21 +13,19 @@ func (s *Server) PostUsersSetIsActive(
 	request apigen.PostUsersSetIsActiveRequestObject,
 ) (apigen.PostUsersSetIsActiveResponseObject, error) {
 	if request.Body == nil {
-		return apigen.PostUsersSetIsActive404JSONResponse(
-			makeAPIError("NOT_FOUND", "empty request body"),
-		), nil
+		return nil, errors.New("request body is empty")
 	}
 
 	userId, err := adapter.ParseUUID(request.Body.UserId)
 	if err != nil {
-		return nil, err
+		return nil, errors.New("invalid user_id")
 	}
 
 	updatedUser, err := s.Services.User.SetIsActive(ctx, userId, request.Body.IsActive)
 	if err != nil {
 		if errors.Is(err, service.ErrNotFound) {
 			return apigen.PostUsersSetIsActive404JSONResponse(
-				makeAPIError("NOT_FOUND", "user not found"),
+				makeAPIError(apigen.NOTFOUND, "user not found"),
 			), nil
 		}
 		return nil, err

@@ -104,6 +104,62 @@ func (r *PullRequestRepo) GetPullRequestById(
 	return pr, nil
 }
 
+func (r *PullRequestRepo) GetPullRequestsByIds(
+	ctx context.Context,
+	ids []uuid.UUID,
+) ([]domain.PullRequest, error) {
+	if len(ids) == 0 {
+		return []domain.PullRequest{}, nil
+	}
+
+	sql, args, err := r.Builder.
+		Select("id", "pr_name", "author_id", "pr_status", "created_at", "merged_at").
+		From("pull_requests").
+		Where(squirrel.Eq{"id": ids}).
+		ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("build select PRs sql: %w", err)
+	}
+
+	rows, err := r.Pool.Query(ctx, sql, args...)
+	if err != nil {
+		return nil, fmt.Errorf("query PRs by ids: %w", err)
+	}
+	defer rows.Close()
+
+	// collect found PRs in a map for ordering later
+	found := make(map[uuid.UUID]domain.PullRequest, len(ids))
+	for rows.Next() {
+		var pr domain.PullRequest
+		var statusSmallint int
+		if err := rows.Scan(
+			&pr.PullRequestId,
+			&pr.PullRequestName,
+			&pr.AuthorId,
+			&statusSmallint,
+			&pr.CreatedAt,
+			&pr.MergedAt,
+		); err != nil {
+			return nil, fmt.Errorf("scan pr row: %w", err)
+		}
+		pr.Status = toDomainPullRequestStatus(statusSmallint)
+		found[pr.PullRequestId] = pr
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("rows error: %w", err)
+	}
+
+	// preserve order of input ids: append only those found
+	out := make([]domain.PullRequest, 0, len(found))
+	for _, id := range ids {
+		if pr, ok := found[id]; ok {
+			out = append(out, pr)
+		}
+	}
+
+	return out, nil
+}
+
 func (r *PullRequestRepo) SetMerged(
 	ctx context.Context,
 	pullRequestId uuid.UUID,

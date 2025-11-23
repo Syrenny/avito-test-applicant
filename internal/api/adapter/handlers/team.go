@@ -13,7 +13,7 @@ func (s *Server) PostTeamAdd(
 	request apigen.PostTeamAddRequestObject,
 ) (apigen.PostTeamAddResponseObject, error) {
 	if request.Body == nil {
-		return apigen.PostTeamAdd400JSONResponse(makeAPIError("TEAM_EXISTS", "empty request body")), nil
+		return nil, errors.New("request body is empty")
 	}
 
 	domainUsers := adapter.MapAPIMembersToDomainUsersInput(request.Body.Members)
@@ -21,7 +21,7 @@ func (s *Server) PostTeamAdd(
 	teamWithUsers, err := s.Services.Team.CreateTeamWithUsers(ctx, request.Body.TeamName, domainUsers)
 	if err != nil {
 		if errors.Is(err, service.ErrTeamAlreadyExists) {
-			return apigen.PostTeamAdd400JSONResponse(makeAPIError("TEAM_EXISTS", err.Error())), nil
+			return apigen.PostTeamAdd400JSONResponse(makeAPIError(apigen.TEAMEXISTS, err.Error())), nil
 		}
 		return nil, err
 	}
@@ -42,7 +42,7 @@ func (s *Server) GetTeamGet(
 	teamWithUsers, err := s.Services.Team.GetTeamByName(ctx, teamName)
 	if err != nil {
 		if errors.Is(err, service.ErrNotFound) {
-			return apigen.GetTeamGet404JSONResponse(makeAPIError("NOT_FOUND", err.Error())), nil
+			return apigen.GetTeamGet404JSONResponse(makeAPIError(apigen.NOTFOUND, err.Error())), nil
 		}
 		return nil, err
 	}

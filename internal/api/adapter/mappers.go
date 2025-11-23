@@ -60,3 +60,29 @@ func MapAPIMembersToDomainUsersInput(members []apigen.TeamMember) []domain.UserI
 	}
 	return users
 }
+
+func MapPullRequestShortToAPI(pr domain.PullRequestShort) apigen.PullRequestShort {
+	return apigen.PullRequestShort{
+		PullRequestId:   pr.PullRequestId.String(),
+		AuthorId:        pr.AuthorId.String(),
+		PullRequestName: pr.PullRequestName,
+		Status:          apigen.PullRequestShortStatus(pr.Status),
+	}
+}
+
+func MapPullRequestWithReviewersToAPI(pr domain.PullRequestWithReviewers) apigen.PullRequest {
+	reviewers := make([]string, len(pr.Reviewers))
+	for i, id := range pr.Reviewers {
+		reviewers[i] = id.String()
+	}
+
+	return apigen.PullRequest{
+		PullRequestId:     pr.PullRequestId.String(),
+		PullRequestName:   pr.PullRequestName,
+		AuthorId:          pr.AuthorId.String(),
+		Status:            apigen.PullRequestStatus(pr.Status),
+		CreatedAt:         pr.CreatedAt,
+		MergedAt:          pr.MergedAt,
+		AssignedReviewers: reviewers,
+	}
+}

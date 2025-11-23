@@ -4,11 +4,9 @@ import (
 	apigen "avito-test-applicant/internal/api/gen"
 )
 
-func makeAPIError(code string, message string) apigen.ErrorResponse {
-	return apigen.ErrorResponse{
-		Error: &apigen.ErrorResponse{
-			Code:    code,
-			Message: message,
-		},
-	}
+func makeAPIError(code apigen.ErrorResponseErrorCode, message string) apigen.ErrorResponse {
+	var err apigen.ErrorResponse
+	err.Error.Code = code
+	err.Error.Message = message
+	return err
 }

@@ -27,3 +27,15 @@ type PullRequestReviewers struct {
 	// AssignedReviewers user_id назначенных ревьюверов (0..2)
 	AssignedReviewers []uuid.UUID `json:"assigned_reviewers"`
 }
+
+type PullRequestWithReviewers struct {
+	PullRequest
+	Reviewers []uuid.UUID `json:"reviewers"`
+}
+
+type PullRequestShort struct {
+	PullRequestId   uuid.UUID         `json:"pull_request_id"`
+	AuthorId        uuid.UUID         `json:"author_id"`
+	PullRequestName string            `json:"pull_request_name"`
+	Status          PullRequestStatus `json:"status"`
+}

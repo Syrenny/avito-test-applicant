@@ -66,3 +66,75 @@ func (r *ReviewerRepo) RemoveOne(
 
 	return nil
 }
+
+func (r *ReviewerRepo) ListReviewers(
+	ctx context.Context,
+	pullRequestId uuid.UUID,
+) ([]uuid.UUID, error) {
+	sql, args, err := r.Builder.
+		Select("user_id").
+		From("pr_reviewers").
+		Where(squirrel.Eq{
+			"pr_id": pullRequestId,
+		}).
+		ToSql()
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err := r.Pool.Query(ctx, sql, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var reviewers []uuid.UUID
+	for rows.Next() {
+		var userId uuid.UUID
+		if err := rows.Scan(&userId); err != nil {
+			return nil, err
+		}
+		reviewers = append(reviewers, userId)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return reviewers, nil
+}
+
+func (r *ReviewerRepo) ListByUserId(
+	ctx context.Context,
+	userId uuid.UUID,
+) ([]uuid.UUID, error) {
+	sql, args, err := r.Builder.
+		Select("pr_id").
+		From("pr_reviewers").
+		Where(squirrel.Eq{"user_id": userId}).
+		ToSql()
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err := r.Pool.Query(ctx, sql, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var prIDs []uuid.UUID
+	for rows.Next() {
+		var id uuid.UUID
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		prIDs = append(prIDs, id)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return prIDs, nil
+}
