@@ -17,7 +17,7 @@ FROM debian:stable-slim
 
 RUN apt-get update -qq && \
     apt-get install -y --no-install-recommends \
-    curl=8.17.0 && \
+    curl && \
     rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /app/config /config

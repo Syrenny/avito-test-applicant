@@ -16,7 +16,10 @@ func (s *Server) PostTeamAdd(
 		return nil, errors.New("request body is empty")
 	}
 
-	domainUsers := adapter.MapAPIMembersToDomainUsersInput(request.Body.Members)
+	domainUsers, err := adapter.MapAPIMembersToDomainUsersInput(request.Body.Members)
+	if err != nil {
+		return nil, err
+	}
 
 	teamWithUsers, err := s.Services.Team.CreateTeamWithUsers(ctx, request.Body.TeamName, domainUsers)
 	if err != nil {

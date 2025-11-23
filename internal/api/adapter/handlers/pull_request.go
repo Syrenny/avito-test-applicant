@@ -19,14 +19,14 @@ func (s *Server) PostPullRequestCreate(
 		return nil, errors.New("empty body")
 	}
 
-	prID, err := uuid.Parse(request.Body.PullRequestId)
+	prID, err := adapter.ParseUUID(request.Body.PullRequestId)
 	if err != nil {
-		return nil, errors.New("invalid pull_request_id")
+		return nil, err
 	}
 
-	authorID, err := uuid.Parse(request.Body.AuthorId)
+	authorID, err := adapter.ParseUUID(request.Body.AuthorId)
 	if err != nil {
-		return nil, errors.New("invalid author_id")
+		return nil, err
 	}
 
 	result, err := s.Services.PullRequest.CreateAndAssignPullRequest(
@@ -62,9 +62,9 @@ func (s *Server) PostPullRequestMerge(
 		return nil, errors.New("empty body")
 	}
 
-	prID, err := uuid.Parse(request.Body.PullRequestId)
+	prID, err := adapter.ParseUUID(request.Body.PullRequestId)
 	if err != nil {
-		return nil, errors.New("invalid pull_request_id")
+		return nil, err
 	}
 
 	pr, err := s.Services.PullRequest.SetMerged(ctx, prID)
@@ -95,14 +95,14 @@ func (s *Server) PostPullRequestReassign(
 		return nil, errors.New("empty body")
 	}
 
-	prID, err := uuid.Parse(request.Body.PullRequestId)
+	prID, err := adapter.ParseUUID(request.Body.PullRequestId)
 	if err != nil {
-		return nil, errors.New("invalid pull_request_id")
+		return nil, err
 	}
 
-	oldID, err := uuid.Parse(request.Body.OldUserId)
+	oldID, err := adapter.ParseUUID(request.Body.OldUserId)
 	if err != nil {
-		return nil, errors.New("invalid old_user_id")
+		return nil, err
 	}
 
 	result, err := s.Services.PullRequest.Reassign(ctx, prID, oldID)
@@ -114,6 +114,8 @@ func (s *Server) PostPullRequestReassign(
 			return apigen.PostPullRequestReassign409JSONResponse(makeAPIError(apigen.PRMERGED, err.Error())), nil
 		case errors.Is(err, service.ErrUserNotFound):
 			return apigen.PostPullRequestReassign404JSONResponse(makeAPIError(apigen.NOTFOUND, err.Error())), nil
+		case errors.Is(err, service.ErrNoCandidate):
+			return apigen.PostPullRequestReassign409JSONResponse(makeAPIError(apigen.NOCANDIDATE, err.Error())), nil
 		default:
 			return nil, err
 		}
@@ -130,9 +132,9 @@ func (s *Server) GetUsersGetReview(
 	ctx context.Context,
 	request apigen.GetUsersGetReviewRequestObject,
 ) (apigen.GetUsersGetReviewResponseObject, error) {
-	userID, err := uuid.Parse(request.Params.UserId)
+	userID, err := adapter.ParseUUID(request.Params.UserId)
 	if err != nil {
-		return nil, errors.New("invalid user_id")
+		return nil, err
 	}
 
 	prs, err := s.Services.PullRequest.GetAssignedReviewsByUserId(ctx, userID)

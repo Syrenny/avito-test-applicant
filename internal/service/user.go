@@ -28,36 +28,6 @@ func NewUserService(
 	}
 }
 
-func (s *UserService) CreateUser(
-	ctx context.Context, username string, teamName string,
-) (domain.User, error) {
-	var createdUser domain.User
-
-	err := s.trManager.Do(ctx, func(ctx context.Context) error {
-		team, err := s.teamRepo.GetTeamByName(ctx, teamName)
-		if err != nil {
-			if errors.Is(err, repoerrors.ErrNotFound) {
-				return ErrNotFound
-			}
-			return err
-		}
-
-		user, err := s.userRepo.CreateUser(ctx, username, team.TeamId)
-		if err != nil {
-			return err
-		}
-
-		createdUser = user
-		return nil
-	})
-
-	if err != nil {
-		return domain.User{}, err
-	}
-
-	return createdUser, nil
-}
-
 func (s *UserService) GetUserById(
 	ctx context.Context, userId uuid.UUID,
 ) (domain.User, error) {

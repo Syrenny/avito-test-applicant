@@ -1,8 +1,7 @@
 package adapter
 
 import (
-	"fmt"
-
+	"avito-test-applicant/internal/api/adapter/apperrors"
 	apigen "avito-test-applicant/internal/api/gen"
 	"avito-test-applicant/internal/domain"
 
@@ -14,7 +13,7 @@ import (
 func ParseUUID(s string) (uuid.UUID, error) {
 	id, err := uuid.Parse(s)
 	if err != nil {
-		return uuid.Nil, fmt.Errorf("invalid uuid %q: %w", s, err)
+		return uuid.Nil, apperrors.ErrInvalidUUID
 	}
 	return id, nil
 }
@@ -44,21 +43,28 @@ func MapDomainTeamWithUsersToAPITeam(t domain.TeamWithUsers) *apigen.Team {
 
 // API → Domain
 
-func MapAPIMemberToDomainUserInput(m apigen.TeamMember) domain.UserInput {
-	userId, _ := uuid.Parse(m.UserId)
+func MapAPIMemberToDomainUserInput(m apigen.TeamMember) (domain.UserInput, error) {
+	userId, err := ParseUUID(m.UserId)
+	if err != nil {
+		return domain.UserInput{}, err
+	}
 	return domain.UserInput{
 		UserId:   userId,
 		Username: m.Username,
 		IsActive: m.IsActive,
-	}
+	}, nil
 }
 
-func MapAPIMembersToDomainUsersInput(members []apigen.TeamMember) []domain.UserInput {
+func MapAPIMembersToDomainUsersInput(members []apigen.TeamMember) ([]domain.UserInput, error) {
 	users := make([]domain.UserInput, len(members))
 	for i, m := range members {
-		users[i] = MapAPIMemberToDomainUserInput(m)
+		var err error
+		users[i], err = MapAPIMemberToDomainUserInput(m)
+		if err != nil {
+			return nil, err
+		}
 	}
-	return users
+	return users, nil
 }
 
 func MapPullRequestShortToAPI(pr domain.PullRequestShort) apigen.PullRequestShort {

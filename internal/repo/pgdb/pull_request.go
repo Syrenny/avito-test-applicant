@@ -9,6 +9,8 @@ import (
 	"time"
 
 	"github.com/Masterminds/squirrel"
+	trmpgx "github.com/avito-tech/go-transaction-manager/drivers/pgxv5/v2"
+
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -16,10 +18,14 @@ import (
 
 type PullRequestRepo struct {
 	*postgres.Postgres
+	getter *trmpgx.CtxGetter
 }
 
-func NewPullRequestRepo(pg *postgres.Postgres) *PullRequestRepo {
-	return &PullRequestRepo{pg}
+func NewPullRequestRepo(pg *postgres.Postgres, getter *trmpgx.CtxGetter) *PullRequestRepo {
+	return &PullRequestRepo{
+		Postgres: pg,
+		getter:   getter,
+	}
 }
 
 func toDomainPullRequestStatus(smallint int) domain.PullRequestStatus {
@@ -45,9 +51,11 @@ func (r *PullRequestRepo) CreatePullRequest(
 		return domain.PullRequest{}, fmt.Errorf("build insert PR sql: %w", err)
 	}
 
+	conn := r.getter.DefaultTrOrDB(ctx, r.Pool)
+
 	var pr domain.PullRequest
 	var statusSmallint int
-	err = r.Pool.QueryRow(ctx, sql, args...).Scan(
+	err = conn.QueryRow(ctx, sql, args...).Scan(
 		&pr.PullRequestId,
 		&pr.PullRequestName,
 		&pr.AuthorId,
@@ -82,9 +90,11 @@ func (r *PullRequestRepo) GetPullRequestById(
 		return domain.PullRequest{}, fmt.Errorf("build select PR sql: %w", err)
 	}
 
+	conn := r.getter.DefaultTrOrDB(ctx, r.Pool)
+
 	var pr domain.PullRequest
 	var statusSmallint int
-	err = r.Pool.QueryRow(ctx, sql, args...).Scan(
+	err = conn.QueryRow(ctx, sql, args...).Scan(
 		&pr.PullRequestId,
 		&pr.PullRequestName,
 		&pr.AuthorId,
@@ -121,7 +131,9 @@ func (r *PullRequestRepo) GetPullRequestsByIds(
 		return nil, fmt.Errorf("build select PRs sql: %w", err)
 	}
 
-	rows, err := r.Pool.Query(ctx, sql, args...)
+	conn := r.getter.DefaultTrOrDB(ctx, r.Pool)
+
+	rows, err := conn.Query(ctx, sql, args...)
 	if err != nil {
 		return nil, fmt.Errorf("query PRs by ids: %w", err)
 	}
@@ -175,9 +187,11 @@ func (r *PullRequestRepo) SetMerged(
 		return domain.PullRequest{}, fmt.Errorf("build update PR sql: %w", err)
 	}
 
+	conn := r.getter.DefaultTrOrDB(ctx, r.Pool)
+
 	var pr domain.PullRequest
 	var statusSmallint int
-	err = r.Pool.QueryRow(ctx, sql, args...).Scan(
+	err = conn.QueryRow(ctx, sql, args...).Scan(
 		&pr.PullRequestId,
 		&pr.PullRequestName,
 		&pr.AuthorId,

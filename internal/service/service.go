@@ -23,11 +23,6 @@ type Team interface {
 }
 
 type User interface {
-	CreateUser(
-		ctx context.Context,
-		username string,
-		teamName string,
-	) (domain.User, error)
 	GetUserById(
 		ctx context.Context,
 		userId uuid.UUID,
@@ -50,10 +45,6 @@ type PullRequest interface {
 		ctx context.Context,
 		pullRequestId uuid.UUID,
 	) (domain.PullRequest, error)
-	GetPullRequestsByUserId(
-		ctx context.Context,
-		userId uuid.UUID,
-	) ([]domain.PullRequest, error)
 	SetMerged(
 		ctx context.Context,
 		pullRequestId uuid.UUID,

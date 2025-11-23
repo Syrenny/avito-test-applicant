@@ -18,7 +18,7 @@ func (s *Server) PostUsersSetIsActive(
 
 	userId, err := adapter.ParseUUID(request.Body.UserId)
 	if err != nil {
-		return nil, errors.New("invalid user_id")
+		return nil, err
 	}
 
 	updatedUser, err := s.Services.User.SetIsActive(ctx, userId, request.Body.IsActive)

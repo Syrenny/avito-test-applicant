@@ -4,6 +4,7 @@ import (
 	"avito-test-applicant/internal/domain"
 	"avito-test-applicant/internal/repo"
 	"avito-test-applicant/internal/repo/repoerrors"
+	"avito-test-applicant/internal/utils/id"
 	"avito-test-applicant/pkg/postgres"
 	"context"
 	"errors"
@@ -40,7 +41,8 @@ func (s *TeamService) CreateTeamWithUsers(
 			return ErrTeamAlreadyExists
 		}
 
-		team, err = s.teamRepo.CreateTeam(ctx, teamName)
+		teamId := id.NewUUID()
+		team, err = s.teamRepo.CreateTeam(ctx, teamId, teamName)
 		if err != nil {
 			if errors.Is(err, repoerrors.ErrAlreadyExists) {
 				return ErrTeamAlreadyExists
@@ -50,7 +52,7 @@ func (s *TeamService) CreateTeamWithUsers(
 		var createdOrUpdatedUsers []domain.User
 
 		for _, userInput := range members {
-			user, err := s.userRepo.CreateUser(ctx, &userInput.UserId, userInput.Username, userInput.IsActive, team.TeamId)
+			user, err := s.userRepo.CreateUser(ctx, userInput.UserId, userInput.Username, userInput.IsActive, team.TeamId)
 			if err != nil {
 				if errors.Is(err, repoerrors.ErrAlreadyExists) {
 					user = domain.User{

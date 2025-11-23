@@ -3,16 +3,13 @@ package postgres
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/Masterminds/squirrel"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 const (
-	defaultMaxPoolSize  = 1
-	defaultConnAttempts = 10
-	defaultConnTimeout  = time.Second
+	defaultMaxPoolSize = 1
 )
 
 type Postgres struct {

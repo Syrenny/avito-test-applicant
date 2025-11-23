@@ -229,6 +229,9 @@ func (s *PullRequestService) Reassign(
 		if err != nil {
 			return err
 		}
+		if len(candidates) == 0 {
+			return ErrNoCandidate
+		}
 		replacement := candidates[0]
 
 		// 5) снять oldUserId

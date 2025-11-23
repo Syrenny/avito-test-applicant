@@ -5,52 +5,59 @@ import (
 	"avito-test-applicant/internal/repo/repoerrors"
 	"avito-test-applicant/pkg/postgres"
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/Masterminds/squirrel"
+	trmpgx "github.com/avito-tech/go-transaction-manager/drivers/pgxv5/v2"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 type UserRepo struct {
 	*postgres.Postgres
+	getter *trmpgx.CtxGetter
 }
 
-func NewUserRepo(pg *postgres.Postgres) *UserRepo {
-	return &UserRepo{pg}
+func NewUserRepo(pg *postgres.Postgres, getter *trmpgx.CtxGetter) *UserRepo {
+	return &UserRepo{
+		Postgres: pg,
+		getter:   getter,
+	}
 }
 
 func (r *UserRepo) CreateUser(
 	ctx context.Context,
-	userId *uuid.UUID,
+	userId uuid.UUID,
 	username string,
 	isActive bool,
 	teamId uuid.UUID,
 ) (domain.User, error) {
-	var id uuid.UUID
-	if userId != nil {
-		id = *userId
-	} else {
-		id = uuid.New()
-	}
 	sql, args, err := r.Builder.
 		Insert("users").
 		Columns("id", "username", "is_active", "team_id").
-		Values(id, username, isActive, teamId).
+		Values(userId, username, isActive, teamId).
 		Suffix("RETURNING id, username, team_id, is_active").
 		ToSql()
 	if err != nil {
 		return domain.User{}, fmt.Errorf("build insert user sql: %w", err)
 	}
 
+	conn := r.getter.DefaultTrOrDB(ctx, r.Pool)
+
 	var u domain.User
-	err = r.Pool.QueryRow(ctx, sql, args...).Scan(
+	err = conn.QueryRow(ctx, sql, args...).Scan(
 		&u.UserId,
 		&u.Username,
 		&u.TeamId,
 		&u.IsActive,
 	)
 	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			return domain.User{}, repoerrors.ErrUsernameTakenInTeam
+		}
 		return domain.User{}, fmt.Errorf("exec insert user: %w", err)
 	}
 
@@ -71,8 +78,10 @@ func (r *UserRepo) GetUserById(
 		return domain.User{}, fmt.Errorf("build select user sql: %w", err)
 	}
 
+	conn := r.getter.DefaultTrOrDB(ctx, r.Pool)
+
 	var u domain.User
-	err = r.Pool.QueryRow(ctx, sql, args...).Scan(
+	err = conn.QueryRow(ctx, sql, args...).Scan(
 		&u.UserId,
 		&u.Username,
 		&u.TeamId,
@@ -103,8 +112,10 @@ func (r *UserRepo) SetIsActive(
 		return domain.User{}, fmt.Errorf("build update user sql: %w", err)
 	}
 
+	conn := r.getter.DefaultTrOrDB(ctx, r.Pool)
+
 	var u domain.User
-	err = r.Pool.QueryRow(ctx, sql, args...).Scan(
+	err = conn.QueryRow(ctx, sql, args...).Scan(
 		&u.UserId,
 		&u.Username,
 		&u.TeamId,
@@ -133,7 +144,9 @@ func (r *UserRepo) GetUsersByTeam(
 		return nil, fmt.Errorf("build select users by team sql: %w", err)
 	}
 
-	rows, err := r.Pool.Query(ctx, sql, args...)
+	conn := r.getter.DefaultTrOrDB(ctx, r.Pool)
+
+	rows, err := conn.Query(ctx, sql, args...)
 	if err != nil {
 		return nil, fmt.Errorf("query users by team: %w", err)
 	}
@@ -177,8 +190,10 @@ func (r *UserRepo) UpdateUser(
 		return domain.User{}, fmt.Errorf("build update user sql: %w", err)
 	}
 
+	conn := r.getter.DefaultTrOrDB(ctx, r.Pool)
+
 	var u domain.User
-	err = r.Pool.QueryRow(ctx, sql, args...).Scan(
+	err = conn.QueryRow(ctx, sql, args...).Scan(
 		&u.UserId,
 		&u.Username,
 		&u.TeamId,

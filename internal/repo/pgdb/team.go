@@ -10,6 +10,7 @@ import (
 	"fmt"
 
 	"github.com/Masterminds/squirrel"
+	trmpgx "github.com/avito-tech/go-transaction-manager/drivers/pgxv5/v2"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -17,28 +18,35 @@ import (
 
 type TeamRepo struct {
 	*postgres.Postgres
+	getter *trmpgx.CtxGetter
 }
 
-func NewTeamRepo(pg *postgres.Postgres) *TeamRepo {
-	return &TeamRepo{pg}
+func NewTeamRepo(pg *postgres.Postgres, getter *trmpgx.CtxGetter) *TeamRepo {
+	return &TeamRepo{
+		Postgres: pg,
+		getter:   getter,
+	}
 }
 
 func (r *TeamRepo) CreateTeam(
 	ctx context.Context,
+	teamId uuid.UUID,
 	teamName string,
 ) (domain.Team, error) {
 	query, args, err := r.Builder.
 		Insert("teams").
-		Columns("team_name").
-		Values(teamName).
+		Columns("id", "team_name").
+		Values(teamId, teamName).
 		Suffix("RETURNING id, team_name").
 		ToSql()
 	if err != nil {
 		return domain.Team{}, err
 	}
 
+	conn := r.getter.DefaultTrOrDB(ctx, r.Pool)
+
 	var t domain.Team
-	err = r.Pool.QueryRow(ctx, query, args...).Scan(
+	err = conn.QueryRow(ctx, query, args...).Scan(
 		&t.TeamId,
 		&t.TeamName,
 	)
@@ -68,8 +76,10 @@ func (r *TeamRepo) GetTeamByName(
 		return domain.Team{}, fmt.Errorf("build select team sql: %w", err)
 	}
 
+	conn := r.getter.DefaultTrOrDB(ctx, r.Pool)
+
 	var t domain.Team
-	err = r.Pool.QueryRow(ctx, query, args...).Scan(
+	err = conn.QueryRow(ctx, query, args...).Scan(
 		&t.TeamId,
 		&t.TeamName,
 	)
@@ -97,8 +107,10 @@ func (r *TeamRepo) GetTeamById(
 		return domain.Team{}, fmt.Errorf("build select team sql: %w", err)
 	}
 
+	conn := r.getter.DefaultTrOrDB(ctx, r.Pool)
+
 	var t domain.Team
-	err = r.Pool.QueryRow(ctx, query, args...).Scan(
+	err = conn.QueryRow(ctx, query, args...).Scan(
 		&t.TeamId,
 		&t.TeamName,
 	)

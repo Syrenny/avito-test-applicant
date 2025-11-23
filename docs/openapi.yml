@@ -135,10 +135,10 @@ paths:
             example:
               team_name: payments
               members:
-                - user_id: u1
+                - user_id: 00000000-0000-0000-0000-000000000001
                   username: Alice
                   is_active: true
-                - user_id: u2
+                - user_id: 00000000-0000-0000-0000-000000000002
                   username: Bob
                   is_active: true
       responses:
@@ -155,10 +155,10 @@ paths:
                 team:
                   team_name: backend
                   members:
-                    - user_id: u1
+                    - user_id: 00000000-0000-0000-0000-000000000001
                       username: Alice
                       is_active: true
-                    - user_id: u2
+                    - user_id: 00000000-0000-0000-0000-000000000002
                       username: Bob
                       is_active: true
         '400':
@@ -187,10 +187,10 @@ paths:
               example:
                 team_name: backend
                 members:
-                  - user_id: u1
+                  - user_id: 00000000-0000-0000-0000-000000000001
                     username: Alice
                     is_active: true
-                  - user_id: u2
+                  - user_id: 00000000-0000-0000-0000-000000000002
                     username: Bob
                     is_active: true
         '404':
@@ -216,7 +216,7 @@ paths:
                 is_active:
                   type: boolean
             example:
-              user_id: u2
+              user_id: 00000000-0000-0000-0000-000000000001
               is_active: false
       responses:
         '200':
@@ -230,7 +230,7 @@ paths:
                     $ref: '#/components/schemas/User'
               example:
                 user:
-                  user_id: u2
+                  user_id: 00000000-0000-0000-0000-000000000002
                   username: Bob
                   team_name: backend
                   is_active: false
@@ -256,9 +256,9 @@ paths:
                 pull_request_name: { type: string }
                 author_id: { type: string }
             example:
-              pull_request_id: pr-1001
+              pull_request_id: 00000000-0000-0000-0000-000000000001
               pull_request_name: Add search
-              author_id: u1
+              author_id: 00000000-0000-0000-0000-000000000001
       responses:
         '201':
           description: PR создан
@@ -271,11 +271,11 @@ paths:
                     $ref: '#/components/schemas/PullRequest'
               example:
                 pr:
-                  pull_request_id: pr-1001
+                  pull_request_id: 00000000-0000-0000-0000-000000000001
                   pull_request_name: Add search
-                  author_id: u1
+                  author_id: 00000000-0000-0000-0000-000000000001
                   status: OPEN
-                  assigned_reviewers: [u2, u3]
+                  assigned_reviewers: [00000000-0000-0000-0000-000000000002, 00000000-0000-0000-0000-000000000003]
         '404':
           description: Автор/команда не найдены
           content:
@@ -303,7 +303,7 @@ paths:
               properties:
                 pull_request_id: { type: string }
             example:
-              pull_request_id: pr-1001
+              pull_request_id: 00000000-0000-0000-0000-000000000001
       responses:
         '200':
           description: PR в состоянии MERGED
@@ -316,11 +316,11 @@ paths:
                     $ref: '#/components/schemas/PullRequest'
               example:
                 pr:
-                  pull_request_id: pr-1001
+                  pull_request_id: 00000000-0000-0000-0000-000000000001
                   pull_request_name: Add search
-                  author_id: u1
+                  author_id: 00000000-0000-0000-0000-000000000001
                   status: MERGED
-                  assigned_reviewers: [u2, u3]
+                  assigned_reviewers: [00000000-0000-0000-0000-000000000002, 00000000-0000-0000-0000-000000000003]
                   mergedAt: 2025-10-24T12:34:56Z
         '404':
           description: PR не найден
@@ -343,8 +343,8 @@ paths:
                 pull_request_id: { type: string }
                 old_user_id: { type: string }
             example:
-              pull_request_id: pr-1001
-              old_reviewer_id: u2
+              pull_request_id: 00000000-0000-0000-0000-000000000001
+              old_reviewer_id: 00000000-0000-0000-0000-000000000002
       responses:
         '200':
           description: Переназначение выполнено
@@ -361,12 +361,12 @@ paths:
                     description: user_id нового ревьювера
               example:
                 pr:
-                  pull_request_id: pr-1001
+                  pull_request_id: 00000000-0000-0000-0000-000000000001
                   pull_request_name: Add search
-                  author_id: u1
+                  author_id: 00000000-0000-0000-0000-000000000001
                   status: OPEN
-                  assigned_reviewers: [u3, u5]
-                replaced_by: u5
+                  assigned_reviewers: [00000000-0000-0000-0000-000000000003, 00000000-0000-0000-0000-000000000005]
+                replaced_by: 00000000-0000-0000-0000-000000000005
         '404':
           description: PR или пользователь не найден
           content:
@@ -413,9 +413,9 @@ paths:
                     items:
                       $ref: '#/components/schemas/PullRequestShort'
               example:
-                user_id: u2
+                user_id: 00000000-0000-0000-0000-000000000002
                 pull_requests:
-                  - pull_request_id: pr-1001
+                  - pull_request_id: 00000000-0000-0000-0000-000000000001
                     pull_request_name: Add search
-                    author_id: u1
+                    author_id: 00000000-0000-0000-0000-000000000001
                     status: OPEN

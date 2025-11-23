@@ -6,12 +6,15 @@ import (
 	"avito-test-applicant/pkg/postgres"
 	"context"
 
+	trmpgx "github.com/avito-tech/go-transaction-manager/drivers/pgxv5/v2"
+
 	"github.com/google/uuid"
 )
 
 type Team interface {
 	CreateTeam(
 		ctx context.Context,
+		teamId uuid.UUID,
 		teamName string,
 	) (domain.Team, error)
 	GetTeamByName(
@@ -27,7 +30,7 @@ type Team interface {
 type User interface {
 	CreateUser(
 		ctx context.Context,
-		userId *uuid.UUID,
+		userId uuid.UUID,
 		username string,
 		isActive bool,
 		teamId uuid.UUID,
@@ -100,11 +103,11 @@ type Repositories struct {
 	Reviewer
 }
 
-func NewRepositories(pg *postgres.Postgres) *Repositories {
+func NewRepositories(pg *postgres.Postgres, getter *trmpgx.CtxGetter) *Repositories {
 	return &Repositories{
-		Team:        pgdb.NewTeamRepo(pg),
-		User:        pgdb.NewUserRepo(pg),
-		PullRequest: pgdb.NewPullRequestRepo(pg),
-		Reviewer:    pgdb.NewReviewerRepo(pg),
+		Team:        pgdb.NewTeamRepo(pg, getter),
+		User:        pgdb.NewUserRepo(pg, getter),
+		PullRequest: pgdb.NewPullRequestRepo(pg, getter),
+		Reviewer:    pgdb.NewReviewerRepo(pg, getter),
 	}
 }

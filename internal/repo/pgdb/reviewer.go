@@ -5,6 +5,8 @@ import (
 	"avito-test-applicant/pkg/postgres"
 	"context"
 
+	trmpgx "github.com/avito-tech/go-transaction-manager/drivers/pgxv5/v2"
+
 	"github.com/Masterminds/squirrel"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -12,10 +14,11 @@ import (
 
 type ReviewerRepo struct {
 	*postgres.Postgres
+	getter *trmpgx.CtxGetter
 }
 
-func NewReviewerRepo(pg *postgres.Postgres) *ReviewerRepo {
-	return &ReviewerRepo{pg}
+func NewReviewerRepo(pg *postgres.Postgres, getter *trmpgx.CtxGetter) *ReviewerRepo {
+	return &ReviewerRepo{pg, getter}
 }
 
 func (r *ReviewerRepo) AssignOne(
@@ -23,13 +26,18 @@ func (r *ReviewerRepo) AssignOne(
 	pullRequestId uuid.UUID,
 	userId uuid.UUID,
 ) error {
-	sql, args, _ := r.Builder.
+	sql, args, err := r.Builder.
 		Insert("pr_reviewers").
 		Columns("pr_id", "user_id").
 		Values(pullRequestId, userId).
 		ToSql()
+	if err != nil {
+		return err
+	}
 
-	_, err := r.Pool.Exec(ctx, sql, args...)
+	conn := r.getter.DefaultTrOrDB(ctx, r.Pool)
+
+	_, err = conn.Exec(ctx, sql, args...)
 	if err != nil {
 		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == "23505" {
 			return repoerrors.ErrAlreadyExists
@@ -55,7 +63,9 @@ func (r *ReviewerRepo) RemoveOne(
 		return err
 	}
 
-	cmdTag, err := r.Pool.Exec(ctx, sql, args...)
+	conn := r.getter.DefaultTrOrDB(ctx, r.Pool)
+
+	cmdTag, err := conn.Exec(ctx, sql, args...)
 	if err != nil {
 		return err
 	}
@@ -82,7 +92,9 @@ func (r *ReviewerRepo) ListReviewers(
 		return nil, err
 	}
 
-	rows, err := r.Pool.Query(ctx, sql, args...)
+	conn := r.getter.DefaultTrOrDB(ctx, r.Pool)
+
+	rows, err := conn.Query(ctx, sql, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -117,7 +129,9 @@ func (r *ReviewerRepo) ListByUserId(
 		return nil, err
 	}
 
-	rows, err := r.Pool.Query(ctx, sql, args...)
+	conn := r.getter.DefaultTrOrDB(ctx, r.Pool)
+
+	rows, err := conn.Query(ctx, sql, args...)
 	if err != nil {
 		return nil, err
 	}

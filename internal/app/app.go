@@ -1,17 +1,22 @@
 package app
 
 import (
+	avitotestapplicant "avito-test-applicant"
 	"avito-test-applicant/config"
 	"avito-test-applicant/internal/api/adapter/handlers"
+	"avito-test-applicant/internal/api/adapter/middleware"
 	apigen "avito-test-applicant/internal/api/gen"
 	"avito-test-applicant/internal/repo"
 	"avito-test-applicant/internal/service"
 	"avito-test-applicant/pkg/httpserver"
 	"avito-test-applicant/pkg/postgres"
 	"fmt"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
+
+	trmpgx "github.com/avito-tech/go-transaction-manager/drivers/pgxv5/v2"
 
 	"github.com/labstack/echo/v4"
 
@@ -42,7 +47,7 @@ func Run(configPath string) {
 
 	// Repositories
 	log.Info("Initializing repositories...")
-	repositories := repo.NewRepositories(pg)
+	repositories := repo.NewRepositories(pg, trmpgx.DefaultCtxGetter)
 
 	// Services dependencies
 	log.Info("Initializing services...")
@@ -58,9 +63,23 @@ func Run(configPath string) {
 	// setup handler validator as go-playground/validator
 	e.Validator = &requestValidator{v: gv.New()}
 
-	serverImpl := handlers.NewServer(services)
+	// Swagger UI
+	staticFS := http.FS(avitotestapplicant.SwaggerFS)
+	fileServer := http.FileServer(staticFS)
+	e.GET("/*", echo.WrapHandler(http.StripPrefix("/", fileServer)))
+
+	// Health check endpoint
+	e.GET("/health", func(c echo.Context) error {
+		return c.JSON(http.StatusOK, map[string]string{
+			"status": "ok",
+		})
+	})
+
+	// HTTP error handler
+	e.HTTPErrorHandler = middleware.NewHTTPErrorHandler(log.StandardLogger())
 
 	// HTTP server
+	serverImpl := handlers.NewServer(services)
 	strictServer := apigen.NewStrictHandler(serverImpl, nil)
 	apigen.RegisterHandlers(e, strictServer)
 

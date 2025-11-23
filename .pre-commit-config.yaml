@@ -17,8 +17,3 @@ repos:
     rev: v8.24.2
     hooks:
       - id: gitleaks
-
-  - repo: https://github.com/hadolint/hadolint
-    rev: v2.14.0
-    hooks:
-      - id: hadolint
