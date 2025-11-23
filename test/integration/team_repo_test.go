@@ -26,7 +26,6 @@ func newTeamRepoFromPool(pool *pgxpool.Pool, getter *trmpgx.CtxGetter) *pgdb.Tea
 }
 
 func TestTeamRepo_CreateAndGet(t *testing.T) {
-	t.Parallel()
 
 	helpers.WithTestDatabase(t, testDB.Pool, func(ctx context.Context, pool *pgxpool.Pool) {
 		repo := newTeamRepoFromPool(pool, testDB.Getter)

@@ -1,4 +1,5 @@
 package integration_test
+
 import (
 	"context"
 	"testing"
@@ -24,7 +25,6 @@ func newReviewerRepoFromPool(pool *pgxpool.Pool, getter *trmpgx.CtxGetter) *pgdb
 }
 
 func TestReviewerRepo_AssignAndList(t *testing.T) {
-	t.Parallel()
 
 	helpers.WithTestDatabase(t, testDB.Pool, func(ctx context.Context, pool *pgxpool.Pool) {
 		userRepo := newUserRepoFromPool(pool, testDB.Getter)
@@ -56,7 +56,6 @@ func TestReviewerRepo_AssignAndList(t *testing.T) {
 }
 
 func TestReviewerRepo_AssignAndRemove(t *testing.T) {
-	t.Parallel()
 
 	helpers.WithTestDatabase(t, testDB.Pool, func(ctx context.Context, pool *pgxpool.Pool) {
 		userRepo := newUserRepoFromPool(pool, testDB.Getter)
@@ -86,7 +85,6 @@ func TestReviewerRepo_AssignAndRemove(t *testing.T) {
 }
 
 func TestReviewerRepo_MultipleReviewers(t *testing.T) {
-	t.Parallel()
 
 	helpers.WithTestDatabase(t, testDB.Pool, func(ctx context.Context, pool *pgxpool.Pool) {
 		userRepo := newUserRepoFromPool(pool, testDB.Getter)
@@ -114,7 +112,6 @@ func TestReviewerRepo_MultipleReviewers(t *testing.T) {
 }
 
 func TestReviewerRepo_ListByUserId(t *testing.T) {
-	t.Parallel()
 
 	helpers.WithTestDatabase(t, testDB.Pool, func(ctx context.Context, pool *pgxpool.Pool) {
 		userRepo := newUserRepoFromPool(pool, testDB.Getter)
@@ -147,7 +144,6 @@ func TestReviewerRepo_ListByUserId(t *testing.T) {
 }
 
 func TestReviewerRepo_Errors(t *testing.T) {
-	t.Parallel()
 
 	helpers.WithTestDatabase(t, testDB.Pool, func(ctx context.Context, pool *pgxpool.Pool) {
 		reviewerRepo := newReviewerRepoFromPool(pool, testDB.Getter)

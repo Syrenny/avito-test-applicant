@@ -68,6 +68,48 @@ func (s *PullRequestService) selectFromTeamExcludeAuthor(
 	return candidates, nil
 }
 
+func (s *PullRequestService) selectReplacement(
+	ctx context.Context,
+	teamId uuid.UUID,
+	authorId uuid.UUID,
+	assigned []uuid.UUID,
+	oldUserId uuid.UUID,
+) (uuid.UUID, error) {
+	users, err := s.userRepo.GetUsersByTeam(ctx, teamId)
+	if err != nil {
+		return uuid.Nil, err
+	}
+
+	assignedSet := make(map[uuid.UUID]struct{}, len(assigned))
+	for _, id := range assigned {
+		assignedSet[id] = struct{}{}
+	}
+
+	candidates := make([]uuid.UUID, 0, len(users))
+	for _, u := range users {
+		if u.UserId == authorId {
+			continue
+		}
+		if u.UserId == oldUserId {
+			continue
+		}
+		if !u.IsActive {
+			continue
+		}
+		if _, exists := assignedSet[u.UserId]; exists {
+			continue
+		}
+		candidates = append(candidates, u.UserId)
+	}
+
+	if len(candidates) == 0 {
+		return uuid.Nil, ErrNoCandidate
+	}
+
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	return candidates[r.Intn(len(candidates))], nil
+}
+
 func (s *PullRequestService) assignReviewers(
 	ctx context.Context,
 	prID uuid.UUID,
@@ -224,15 +266,16 @@ func (s *PullRequestService) Reassign(
 			return ErrUserNotFound
 		}
 
-		// 4) выбрать кандидата на замену из команды автора
-		candidates, err := s.selectFromTeamExcludeAuthor(ctx, pr.AuthorId, pr.AuthorId, 1)
+		oldUser, err := s.userRepo.GetUserById(ctx, pr.AuthorId)
 		if err != nil {
 			return err
 		}
-		if len(candidates) == 0 {
-			return ErrNoCandidate
+
+		// 4) выбрать кандидата на замену из команды автора
+		replacement, err := s.selectReplacement(ctx, oldUser.TeamId, pr.AuthorId, assignedReviewers, oldUserId)
+		if err != nil {
+			return err
 		}
-		replacement := candidates[0]
 
 		// 5) снять oldUserId
 		if err := s.reviewerRepo.RemoveOne(ctx, pullRequestId, oldUserId); err != nil {

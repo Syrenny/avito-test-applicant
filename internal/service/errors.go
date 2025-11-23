@@ -14,5 +14,5 @@ var (
 	ErrNoActiveUsersToReassign = errors.New("no active users available to reassign")
 	ErrUserNotFound            = errors.New("user not found")
 	ErrNotAssigned             = errors.New("reviewer is not assigned to this PR")
-	ErrNoCandidate            = errors.New("no candidates available for review assignment")
+	ErrNoCandidate             = errors.New("no candidates available for review assignment")
 )

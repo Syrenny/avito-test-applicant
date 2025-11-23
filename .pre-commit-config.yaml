@@ -22,13 +22,14 @@ repos:
       rev: v2.6.2
       hooks:
           - id: golangci-lint
-            args: ['run', '--fix']
+            args: ['--fix']
             additional_dependencies: []
 
     - repo: local
       hooks:
           - id: go-fmt
-            name: Go fmt
+            name: go fmt
             entry: go fmt ./...
             language: system
+            pass_filenames: false
             types: [go]

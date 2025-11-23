@@ -9,7 +9,6 @@ import (
 
 	"github.com/Masterminds/squirrel"
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgconn"
 )
 
 type ReviewerRepo struct {
@@ -30,6 +29,7 @@ func (r *ReviewerRepo) AssignOne(
 		Insert("pr_reviewers").
 		Columns("pr_id", "user_id").
 		Values(pullRequestId, userId).
+		Suffix("ON CONFLICT (pr_id, user_id) DO NOTHING").
 		ToSql()
 	if err != nil {
 		return err
@@ -39,9 +39,6 @@ func (r *ReviewerRepo) AssignOne(
 
 	_, err = conn.Exec(ctx, sql, args...)
 	if err != nil {
-		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == "23505" {
-			return repoerrors.ErrAlreadyExists
-		}
 		return err
 	}
 	return nil

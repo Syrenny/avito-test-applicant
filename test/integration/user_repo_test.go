@@ -28,7 +28,7 @@ func newUserRepoFromPool(pool *pgxpool.Pool, getter *trmpgx.CtxGetter) *pgdb.Use
 
 // --- Создание пользователя и получение по ID ---
 func TestUserRepo_CreateAndGet(t *testing.T) {
-	t.Parallel()
+
 	helpers.WithTestDatabase(t, testDB.Pool, func(ctx context.Context, pool *pgxpool.Pool) {
 		teamRepo := newTeamRepoFromPool(pool, testDB.Getter)
 		userRepo := newUserRepoFromPool(pool, testDB.Getter)
@@ -51,7 +51,7 @@ func TestUserRepo_CreateAndGet(t *testing.T) {
 
 // --- Уникальность username в рамках команды ---
 func TestUserRepo_UniqueUsername(t *testing.T) {
-	t.Parallel()
+
 	helpers.WithTestDatabase(t, testDB.Pool, func(ctx context.Context, pool *pgxpool.Pool) {
 		teamRepo := newTeamRepoFromPool(pool, testDB.Getter)
 		userRepo := newUserRepoFromPool(pool, testDB.Getter)
@@ -71,7 +71,7 @@ func TestUserRepo_UniqueUsername(t *testing.T) {
 
 // --- SetIsActive и проверка через GetUserById ---
 func TestUserRepo_SetIsActive(t *testing.T) {
-	t.Parallel()
+
 	helpers.WithTestDatabase(t, testDB.Pool, func(ctx context.Context, pool *pgxpool.Pool) {
 		teamRepo := newTeamRepoFromPool(pool, testDB.Getter)
 		userRepo := newUserRepoFromPool(pool, testDB.Getter)
@@ -95,7 +95,7 @@ func TestUserRepo_SetIsActive(t *testing.T) {
 
 // --- UpdateUser ---
 func TestUserRepo_UpdateUser(t *testing.T) {
-	t.Parallel()
+
 	helpers.WithTestDatabase(t, testDB.Pool, func(ctx context.Context, pool *pgxpool.Pool) {
 		teamRepo := newTeamRepoFromPool(pool, testDB.Getter)
 		userRepo := newUserRepoFromPool(pool, testDB.Getter)
@@ -118,7 +118,7 @@ func TestUserRepo_UpdateUser(t *testing.T) {
 
 // --- GetUsersByTeam ---
 func TestUserRepo_GetUsersByTeam(t *testing.T) {
-	t.Parallel()
+
 	helpers.WithTestDatabase(t, testDB.Pool, func(ctx context.Context, pool *pgxpool.Pool) {
 		teamRepo := newTeamRepoFromPool(pool, testDB.Getter)
 		userRepo := newUserRepoFromPool(pool, testDB.Getter)
@@ -148,7 +148,6 @@ func TestUserRepo_GetUsersByTeam(t *testing.T) {
 }
 
 func TestUserRepo_Errors(t *testing.T) {
-	t.Parallel()
 
 	helpers.WithTestDatabase(t, testDB.Pool, func(ctx context.Context, pool *pgxpool.Pool) {
 		repo := newUserRepoFromPool(pool, testDB.Getter)

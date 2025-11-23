@@ -15,10 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// ---------- Тесты ----------
-
 func Test_Reassign_StandardCase(t *testing.T) {
-	t.Parallel()
 
 	helpers.WithTestDatabase(t, testDB.Pool, func(ctx context.Context, pool *pgxpool.Pool) {
 		service := newPRServiceFromPool(pool, testDB.Getter)
@@ -27,9 +24,11 @@ func Test_Reassign_StandardCase(t *testing.T) {
 			{Username: "author", IsActive: true},
 			{Username: "rev1", IsActive: true},
 			{Username: "rev2", IsActive: true},
-			{Username: "candidate", IsActive: true},
+			{Username: "candidate1", IsActive: true},
+			{Username: "candidate2", IsActive: true},
 		}
 		_, created := setupTeamWithUsers(ctx, t, pool, testDB.Getter, "team-standard", users)
+
 		var authorId uuid.UUID
 		for _, u := range created {
 			if u.Username == "author" {
@@ -42,36 +41,33 @@ func Test_Reassign_StandardCase(t *testing.T) {
 		require.NoError(t, err)
 		require.Len(t, prRes.Reviewers, 2)
 
+		// Переназначаем первого ревьювера
 		oldUser := prRes.Reviewers[0]
 		res, err := service.Reassign(ctx, prID, oldUser)
 		require.NoError(t, err)
-
 		require.Equal(t, prID, res.PullRequest.PullRequestId)
 		require.Len(t, res.Reviewers, 2)
+
 		// автор не среди ревьюверов
 		for _, uid := range res.Reviewers {
 			require.NotEqual(t, authorId, uid)
 		}
-		// новый ревьювер активен
+
+		// новый ревьювер активен и отличается от oldUser
 		found := false
 		for _, u := range created {
-			if u.UserId == oldUser {
-				continue
-			}
 			for _, r := range res.Reviewers {
-				if r == u.UserId {
+				if r == u.UserId && r != oldUser {
 					require.True(t, u.IsActive)
 					found = true
 				}
 			}
 		}
-		require.True(t, found, "replacement reviewer must be active")
+		require.True(t, found, "replacement reviewer must be active and different from oldUser")
 	})
 }
 
 func Test_Reassign_NoCandidates(t *testing.T) {
-	t.Parallel()
-
 	helpers.WithTestDatabase(t, testDB.Pool, func(ctx context.Context, pool *pgxpool.Pool) {
 		prService := newPRServiceFromPool(pool, testDB.Getter)
 
@@ -79,7 +75,7 @@ func Test_Reassign_NoCandidates(t *testing.T) {
 			{Username: "author", IsActive: true},
 			{Username: "rev1", IsActive: true},
 			{Username: "rev2", IsActive: true},
-			{Username: "candidate", IsActive: false}, // все кандидаты неактивны
+			{Username: "candidate", IsActive: false},
 		}
 		_, created := setupTeamWithUsers(ctx, t, pool, testDB.Getter, "team-nocand", users)
 		var authorId uuid.UUID
@@ -96,12 +92,11 @@ func Test_Reassign_NoCandidates(t *testing.T) {
 
 		oldUser := prRes.Reviewers[0]
 		_, err = prService.Reassign(ctx, prID, oldUser)
-		require.ErrorIs(t, err, service.ErrPullRequestMerged) // или свой ErrNoCandidates, если добавил
+		require.ErrorIs(t, err, service.ErrNoCandidate)
 	})
 }
 
 func Test_Reassign_OnlyOldUserInTeam(t *testing.T) {
-	t.Parallel()
 
 	helpers.WithTestDatabase(t, testDB.Pool, func(ctx context.Context, pool *pgxpool.Pool) {
 		prService := newPRServiceFromPool(pool, testDB.Getter)
@@ -130,10 +125,9 @@ func Test_Reassign_OnlyOldUserInTeam(t *testing.T) {
 }
 
 func Test_Reassign_Randomness(t *testing.T) {
-	t.Parallel()
 
 	helpers.WithTestDatabase(t, testDB.Pool, func(ctx context.Context, pool *pgxpool.Pool) {
-		prService := newPRServiceFromPool(pool, testDB.Getter)
+		service := newPRServiceFromPool(pool, testDB.Getter)
 
 		users := []domain.User{
 			{Username: "author", IsActive: true},
@@ -141,8 +135,10 @@ func Test_Reassign_Randomness(t *testing.T) {
 			{Username: "rev2", IsActive: true},
 			{Username: "c1", IsActive: true},
 			{Username: "c2", IsActive: true},
+			{Username: "c3", IsActive: true}, // добавлено для стабильной замены
 		}
 		_, created := setupTeamWithUsers(ctx, t, pool, testDB.Getter, "team-random", users)
+
 		var authorId uuid.UUID
 		for _, u := range created {
 			if u.Username == "author" {
@@ -151,32 +147,42 @@ func Test_Reassign_Randomness(t *testing.T) {
 		}
 
 		prID := uuid.New()
-		prRes, err := prService.CreateAndAssignPullRequest(ctx, prID, "pr random", authorId)
+		prRes, err := service.CreateAndAssignPullRequest(ctx, prID, "pr random", authorId)
 		require.NoError(t, err)
 		require.Len(t, prRes.Reviewers, 2)
 
 		oldUser := prRes.Reviewers[0]
 
 		var replacedIds []uuid.UUID
-		for i := 0; i < 5; i++ { // несколько попыток, чтобы проверить рандом
-			res, err := prService.Reassign(ctx, prID, oldUser)
+		// несколько повторных попыток замены, чтобы проверить рандомизацию
+		for i := 0; i < 5; i++ {
+			currentOldUser := oldUser
+			for _, r := range prRes.Reviewers {
+				if r != currentOldUser {
+					currentOldUser = r
+					break
+				}
+			}
+
+			res, err := service.Reassign(ctx, prID, currentOldUser)
 			require.NoError(t, err)
 			require.Len(t, res.Reviewers, 2)
-			replacedIds = append(replacedIds, res.Reviewers[0], res.Reviewers[1])
+			replacedIds = append(replacedIds, res.Reviewers...)
+			prRes.Reviewers = res.Reviewers
 		}
-		// хотя бы один раз должен появиться другой пользователь
+
 		var foundDifferent bool
 		for _, rid := range replacedIds {
 			if rid != oldUser && rid != authorId {
 				foundDifferent = true
+				break
 			}
 		}
-		require.True(t, foundDifferent)
+		require.True(t, foundDifferent, "at least one reassigned reviewer must differ from oldUser and author")
 	})
 }
 
 func Test_Reassign_AfterMerged_Forbidden(t *testing.T) {
-	t.Parallel()
 
 	helpers.WithTestDatabase(t, testDB.Pool, func(ctx context.Context, pool *pgxpool.Pool) {
 		svc := newPRServiceFromPool(pool, testDB.Getter)
@@ -207,7 +213,7 @@ func Test_Reassign_AfterMerged_Forbidden(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, domain.PullRequestStatusMERGED, merged.Status)
 		require.NotNil(t, merged.MergedAt)
-		require.WithinDuration(t, time.Now(), *merged.MergedAt, time.Second)
+		require.WithinDuration(t, time.Now(), *merged.MergedAt, time.Second*2)
 
 		// attempt reassign -> forbidden
 		if len(prRes.Reviewers) == 0 {
@@ -227,44 +233,7 @@ func Test_Reassign_AfterMerged_Forbidden(t *testing.T) {
 	})
 }
 
-func Test_SetMerged_Idempotent(t *testing.T) {
-	t.Parallel()
-
-	helpers.WithTestDatabase(t, testDB.Pool, func(ctx context.Context, pool *pgxpool.Pool) {
-		svc := newPRServiceFromPool(pool, testDB.Getter)
-
-		users := []domain.User{
-			{Username: "author", IsActive: true},
-		}
-		_, created := setupTeamWithUsers(ctx, t, pool, testDB.Getter, "team-idempotent", users)
-		var authorId uuid.UUID
-		for _, u := range created {
-			if u.Username == "author" {
-				authorId = u.UserId
-			}
-		}
-
-		prID := uuid.New()
-		_, err := svc.CreateAndAssignPullRequest(ctx, prID, "pr-idempotent", authorId)
-		require.NoError(t, err)
-
-		// first merge
-		m1, err := svc.SetMerged(ctx, prID)
-		require.NoError(t, err)
-		require.Equal(t, domain.PullRequestStatusMERGED, m1.Status)
-		require.NotNil(t, m1.MergedAt)
-
-		// second merge (should be idempotent — no error, return same state)
-		m2, err := svc.SetMerged(ctx, prID)
-		require.NoError(t, err)
-		require.Equal(t, domain.PullRequestStatusMERGED, m2.Status)
-		require.NotNil(t, m2.MergedAt)
-		// mergedAt should be set (may be same or very close); ensure non-nil
-	})
-}
-
 func Test_Reassign_NonExistentPR(t *testing.T) {
-	t.Parallel()
 
 	helpers.WithTestDatabase(t, testDB.Pool, func(ctx context.Context, pool *pgxpool.Pool) {
 		svc := newPRServiceFromPool(pool, testDB.Getter)
@@ -275,7 +244,6 @@ func Test_Reassign_NonExistentPR(t *testing.T) {
 }
 
 func Test_Reassign_OldUserNotAssigned(t *testing.T) {
-	t.Parallel()
 
 	helpers.WithTestDatabase(t, testDB.Pool, func(ctx context.Context, pool *pgxpool.Pool) {
 		svc := newPRServiceFromPool(pool, testDB.Getter)

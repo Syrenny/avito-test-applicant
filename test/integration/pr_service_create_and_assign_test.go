@@ -69,7 +69,6 @@ func setupTeamWithUsers(ctx context.Context, t *testing.T, pool *pgxpool.Pool, g
 }
 
 func Test_CreateAndAssign_PrimaryCase_TwoReviewers(t *testing.T) {
-	t.Parallel()
 
 	helpers.WithTestDatabase(t, testDB.Pool, func(ctx context.Context, pool *pgxpool.Pool) {
 		service := newPRServiceFromPool(pool, testDB.Getter)
@@ -118,7 +117,6 @@ func Test_CreateAndAssign_PrimaryCase_TwoReviewers(t *testing.T) {
 }
 
 func Test_CreateAndAssign_OneCandidate(t *testing.T) {
-	t.Parallel()
 
 	helpers.WithTestDatabase(t, testDB.Pool, func(ctx context.Context, pool *pgxpool.Pool) {
 		service := newPRServiceFromPool(pool, testDB.Getter)
@@ -146,7 +144,6 @@ func Test_CreateAndAssign_OneCandidate(t *testing.T) {
 }
 
 func Test_CreateAndAssign_NoCandidates(t *testing.T) {
-	t.Parallel()
 
 	helpers.WithTestDatabase(t, testDB.Pool, func(ctx context.Context, pool *pgxpool.Pool) {
 		service := newPRServiceFromPool(pool, testDB.Getter)
@@ -171,7 +168,6 @@ func Test_CreateAndAssign_NoCandidates(t *testing.T) {
 }
 
 func Test_CreateAndAssign_AllInactive(t *testing.T) {
-	t.Parallel()
 
 	helpers.WithTestDatabase(t, testDB.Pool, func(ctx context.Context, pool *pgxpool.Pool) {
 		service := newPRServiceFromPool(pool, testDB.Getter)
@@ -198,7 +194,6 @@ func Test_CreateAndAssign_AllInactive(t *testing.T) {
 }
 
 func Test_CreateAndAssign_MixedActiveInactive(t *testing.T) {
-	t.Parallel()
 
 	helpers.WithTestDatabase(t, testDB.Pool, func(ctx context.Context, pool *pgxpool.Pool) {
 		service := newPRServiceFromPool(pool, testDB.Getter)
@@ -238,7 +233,6 @@ func Test_CreateAndAssign_MixedActiveInactive(t *testing.T) {
 }
 
 func Test_CreateAndAssign_DuplicateId(t *testing.T) {
-	t.Parallel()
 
 	helpers.WithTestDatabase(t, testDB.Pool, func(ctx context.Context, pool *pgxpool.Pool) {
 		prService := newPRServiceFromPool(pool, testDB.Getter)

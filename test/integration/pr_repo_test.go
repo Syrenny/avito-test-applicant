@@ -28,7 +28,6 @@ func newPullRequestRepoFromPool(pool *pgxpool.Pool, getter *trmpgx.CtxGetter) *p
 }
 
 func TestPullRequestRepo_CreateAndGet(t *testing.T) {
-	t.Parallel()
 
 	helpers.WithTestDatabase(t, testDB.Pool, func(ctx context.Context, pool *pgxpool.Pool) {
 		userRepo := newUserRepoFromPool(pool, testDB.Getter)
@@ -53,7 +52,6 @@ func TestPullRequestRepo_CreateAndGet(t *testing.T) {
 }
 
 func TestPullRequestRepo_CreateAndGetByIds(t *testing.T) {
-	t.Parallel()
 
 	helpers.WithTestDatabase(t, testDB.Pool, func(ctx context.Context, pool *pgxpool.Pool) {
 		userRepo := newUserRepoFromPool(pool, testDB.Getter)
@@ -87,7 +85,6 @@ func TestPullRequestRepo_CreateAndGetByIds(t *testing.T) {
 }
 
 func TestPullRequestRepo_SetMerged(t *testing.T) {
-	t.Parallel()
 
 	helpers.WithTestDatabase(t, testDB.Pool, func(ctx context.Context, pool *pgxpool.Pool) {
 		userRepo := newUserRepoFromPool(pool, testDB.Getter)
@@ -107,7 +104,6 @@ func TestPullRequestRepo_SetMerged(t *testing.T) {
 }
 
 func TestPullRequestRepo_Errors(t *testing.T) {
-	t.Parallel()
 
 	helpers.WithTestDatabase(t, testDB.Pool, func(ctx context.Context, pool *pgxpool.Pool) {
 		prRepo := newPullRequestRepoFromPool(pool, testDB.Getter)
@@ -130,7 +126,6 @@ func TestPullRequestRepo_Errors(t *testing.T) {
 }
 
 func TestPullRequestRepo_CreateAlreadyExists(t *testing.T) {
-	t.Parallel()
 
 	helpers.WithTestDatabase(t, testDB.Pool, func(ctx context.Context, pool *pgxpool.Pool) {
 		userRepo := newUserRepoFromPool(pool, testDB.Getter)
