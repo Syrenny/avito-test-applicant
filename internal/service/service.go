@@ -41,10 +41,6 @@ type PullRequest interface {
 		pullRequestName string,
 		authorId uuid.UUID,
 	) (domain.PullRequestWithReviewers, error)
-	GetPullRequestById(
-		ctx context.Context,
-		pullRequestId uuid.UUID,
-	) (domain.PullRequest, error)
 	SetMerged(
 		ctx context.Context,
 		pullRequestId uuid.UUID,

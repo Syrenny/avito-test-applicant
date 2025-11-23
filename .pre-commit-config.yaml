@@ -33,3 +33,12 @@ repos:
             language: system
             pass_filenames: false
             types: [go]
+
+    - repo: local
+      hooks:
+          - id: goimports
+            name: goimports
+            entry: goimports -w -local .
+            language: system
+            pass_filenames: false
+            types: [go]
