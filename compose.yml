@@ -5,6 +5,10 @@ services:
             - .env
         ports:
             - '5432:5432'
+        environment:
+            POSTGRES_DB: ${POSTGRES_DB:-just_pg_database}
+            POSTGRES_USER: ${POSTGRES_USER:-just_pg_user}
+            POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-just_pg_password}
         volumes:
             - type: bind
               source: ./initdb
