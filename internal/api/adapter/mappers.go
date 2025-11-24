@@ -4,6 +4,7 @@ import (
 	"avito-test-applicant/internal/api/adapter/apperrors"
 	apigen "avito-test-applicant/internal/api/gen"
 	"avito-test-applicant/internal/domain"
+	"strings"
 
 	"github.com/google/uuid"
 )
@@ -11,6 +12,10 @@ import (
 // Domain → API
 
 func ParseUUID(s string) (uuid.UUID, error) {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return uuid.Nil, apperrors.ErrInvalidUUID
+	}
 	id, err := uuid.Parse(s)
 	if err != nil {
 		return uuid.Nil, apperrors.ErrInvalidUUID

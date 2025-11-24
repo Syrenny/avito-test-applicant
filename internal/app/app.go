@@ -24,13 +24,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func Run(configPath string) {
-	// Configuration
-	cfg, err := config.NewConfig(configPath)
-	if err != nil {
-		log.Fatalf("Config error: %s", err)
-	}
-
+func Run(cfg *config.Config) {
 	// Logger
 	SetLogrus(cfg.Log.Level)
 
