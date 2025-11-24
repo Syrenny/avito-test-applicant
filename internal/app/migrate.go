@@ -1,10 +1,8 @@
-//go:build migrate
-
 package app
 
 import (
+	"avito-test-applicant/config"
 	"errors"
-	"os"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -20,13 +18,8 @@ const (
 	defaultTimeout  = time.Second
 )
 
-func init() {
-	databaseURL, ok := os.LookupEnv("PG_URL")
-	if !ok || len(databaseURL) == 0 {
-		log.Fatalf("migrate: environment variable not declared: PG_URL")
-	}
-
-	databaseURL += "?sslmode=disable"
+func RunMigrations(cfg *config.Config) {
+	databaseURL := cfg.URL + "?sslmode=disable"
 
 	var (
 		attempts = defaultAttempts

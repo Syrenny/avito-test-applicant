@@ -9,3 +9,4 @@ log:
 
 postgres:
     max_pool_size: 20
+    default_pg_url: 'postgres://just_pg_user:just_pg_password@postgres:5432/just_pg_database'

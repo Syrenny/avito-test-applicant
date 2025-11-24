@@ -1,6 +1,3 @@
-include .env
-export
-
 PROJECT ?= avito-test-applicant
 COMPOSE := docker compose -p $(PROJECT)
 FILES := -f compose.yml
